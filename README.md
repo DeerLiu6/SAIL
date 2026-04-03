@@ -17,7 +17,7 @@ conda activate SAIL
 conda install pytorch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 pytorch-cuda=12.1 -c pytorch -c nvidia
 cd isaacgym/python && pip install -e .
 cd ~/SAIL/rsl_rl && pip install -e .
-cd ~/SAIL/legged_gym && pip install -e .
+cd ~/SAIL && pip install -e .
 pip install wandb tqdm opencv-python ipdb pyfqmr
 ```
 
