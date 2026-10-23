@@ -4,12 +4,24 @@ from legged_gym.utils.style_discriminator import HumanLikeGaitReward
 
 
 class G1StyleModule:
+	# Relative weights of the six style components. They define the shape of
+	# R_style; the overall weight (0.22) is set once in rewards.scales.style.
+	COMPONENT_WEIGHTS = {
+		'gait_naturalness': 0.01,
+		'body_posture': 0.15,
+		'arm_coordination': 0.01,
+		'arm_swing_phase': 0.01,
+		'step_characteristics': 0.02,
+		'movement_fluency': 0.02,
+	}
 
 	def __init__(self, robot):
 		self.robot = robot
 		self.device = robot.device
 		self.num_envs = robot.num_envs
 		self.human_like_gait_reward = HumanLikeGaitReward(device=self.device)
+		total = float(sum(self.COMPONENT_WEIGHTS.values()))
+		self.style_weights = {name: weight / total for name, weight in self.COMPONENT_WEIGHTS.items()}
 		self._init_buffers()
 
 	def _init_buffers(self):
@@ -159,11 +171,15 @@ class G1StyleModule:
 			'human_like_total': reward,
 		}
 
-		self._style_reward_cache = reward
+		composite = torch.zeros(self.num_envs, device=self.device)
+		for name, weight in self.style_weights.items():
+			composite = composite + weight * components[name]
+
+		self._style_reward_cache = composite
 		self._style_component_cache = components
 		self._style_detail_cache = details
 		self._style_cache_valid = True
-		self._update_style_stats(reward)
+		self._update_style_stats(composite)
 
 	def _update_style_stats(self, reward):
 		if reward.numel() == 0:
@@ -183,6 +199,11 @@ class G1StyleModule:
 	def get_component(self, name):
 		self._ensure_style_cache()
 		return self._style_component_cache.get(name, torch.zeros(self.num_envs, device=self.device))
+
+	def reward_style(self):
+		"""Weighted composite of the six style components (shape of R_style)."""
+		self._ensure_style_cache()
+		return self._style_reward_cache
 
 
 	def reward_gait_naturalness(self):

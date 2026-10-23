@@ -23,13 +23,7 @@ class G1Robot(LeggedRobot):
         enabled = self.cfg.rewards.enable_style_discriminator
         self.style_module = G1StyleModule(self) if enabled else None
         if not enabled:
-            scales = self.cfg.rewards.scales
-            scales.gait_naturalness = 0.0
-            scales.body_posture = 0.0
-            scales.arm_coordination = 0.0
-            scales.arm_swing_phase = 0.0
-            scales.step_characteristics = 0.0
-            scales.movement_fluency = 0.0
+            self.reward_scales['style'] = 0.0
 
     def _create_envs(self):
         super()._create_envs()
@@ -100,38 +94,15 @@ class G1Robot(LeggedRobot):
         if self.style_module:
             self.style_module.reset(env_ids)
 
-    def _style_reward(self, accessor):
+    def _reward_style(self):
+        """Single fixed-weight style reward (overall scale: rewards.scales.style = 0.22).
+
+        The six relative component weights are defined in G1StyleModule.
+        """
         if not self.style_module:
             return torch.zeros(self.num_envs, device=self.device)
-        method = getattr(self.style_module, accessor, None)
-        if method is None:
-            raise AttributeError(f"Style module missing accessor: {accessor}")
-        return method()
-    
-    def _reward_gait_naturalness(self):
-        """Gait naturalness: derived from HumanLikeGaitReward periodicity and speed-consistency features."""
-        return self._style_reward('reward_gait_naturalness')
-    
-    def _reward_body_posture(self):
-        """Posture stability: focuses on body sway balance while ignoring height fluctuations."""
-        return self._style_reward('reward_body_posture')
+        return self.style_module.reward_style()
 
-    def _reward_arm_coordination(self):
-        """Arm coordination: derived from arm-swing balance and arm–leg phase-difference features."""
-        return self._style_reward('reward_arm_coordination')
-
-    def _reward_arm_swing_phase(self):
-        """Arm-swing reward based on HumanLikeGaitReward phase-difference features."""
-        return self._style_reward('reward_arm_swing_phase')
-    
-    def _reward_step_characteristics(self):
-        """Step length and cadence consistency reward (from human-like feature extraction)."""
-        return self._style_reward('reward_step_characteristics')
-
-    def _reward_movement_fluency(self):
-        """Movement fluency: combines speed smoothness and energy-utilization features."""
-        return self._style_reward('reward_movement_fluency')
-    
     def _reward_contact(self):
         res = torch.zeros(self.num_envs, dtype=torch.float, device=self.device)
         for i in range(self.feet_num):

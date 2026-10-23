@@ -184,15 +184,12 @@ class LeggedRobotCfg(BaseConfig):
             pitch_upright = -1.0
             
 
-            gait_naturalness = 0.01 
-            body_posture = 0.15
-            arm_coordination = 0.01
-            arm_swing_phase = 0.01
-            step_characteristics = 0.02 
-            movement_fluency = 0.02
+            # Motion style: lambda_style = 0.22 (fixed). The relative weights of
+            # the six style components live in legged_gym/envs/g1/g1_style.py.
+            style = 0.22
 
         only_positive_rewards = True # if true negative total rewards are clipped at zero (avoids early termination problems)
-        enable_style_discriminator = True
+        enable_style_discriminator = False  # style evaluation disabled by default; set True to train with style rewards
         tracking_sigma = 0.25 # tracking reward = exp(-error^2/sigma)
         soft_dof_pos_limit = 1.        
         soft_dof_vel_limit = 1.
